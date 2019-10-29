@@ -12,7 +12,7 @@ namespace ISO8583Net.Utilities
     /// <summary>
     /// Bitmap Extensions to provide functions such as bit enumerators
     /// </summary>
-    public static class BitMapExtensions 
+    public static class BitMapExtensions
     {
         /// <summary>
         /// Get an boolean enumeration for each field of the bitmap         
@@ -67,8 +67,8 @@ namespace ISO8583Net.Utilities
             }
         }
 
-        
-        
+
+
     }
     /// <summary>
     /// The ISO8583Utilities static class implements methods for performing fast conversion between different data types
@@ -79,7 +79,7 @@ namespace ISO8583Net.Utilities
     public static class ISOUtils
     {
         /// <summary>Static array for fast lookup to convert from ebcdic to ascii</summary>
-        private static readonly int[] _os_toascii = new int[256] 
+        private static readonly int[] _os_toascii = new int[256]
         {
 	    /*00*/ 0x00, 0x01, 0x02, 0x03, 0x85, 0x09, 0x86, 0x7f,
                0x87, 0x8d, 0x8e, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, /*................*/
@@ -115,7 +115,7 @@ namespace ISO8583Net.Utilities
                0x38, 0x39, 0xb3, 0x7b, 0xdc, 0x7d, 0xda, 0x7e  /*0123456789.{.}.~*/};
 
         /// <summary>Static array for fast lookup to convert from ascii to ebcdic</summary>
-        private static readonly int[] _os_toebcdic = new int[256] 
+        private static readonly int[] _os_toebcdic = new int[256]
         {
 	    /*00*/ 0x00, 0x01, 0x02, 0x03, 0x37, 0x2d, 0x2e, 0x2f,
                0x16, 0x05, 0x15, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,  /*................*/
@@ -164,7 +164,7 @@ namespace ISO8583Net.Utilities
                       0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
                       0x0, 0xA, 0xB, 0xC, 0xD, 0xE, 0xF
         };
-               
+
         /// <summary>
         /// Extents array functionality by allowing to concatenate two arrays
         /// </summary>
@@ -201,7 +201,7 @@ namespace ISO8583Net.Utilities
             return result;
         }
 
-        
+
         /// <summary>
         /// Hex to Byte array
         /// </summary>
@@ -368,26 +368,28 @@ namespace ISO8583Net.Utilities
             bool needPadding = valueLength % 2 != 0;
             if (needPadding && padding == ISOFieldPadding.LEFT)
             {
+                //Read data and take first nibble
                 //left nibble padding leave empty and make a byte from the first nibble of the data 
                 packedBytes[index] = (byte)(value[0] - 0x30);
                 index++;
-                //ignore the first char of the value 
-                startIndex++;                                
-            }  
+                //ignore the first char of the value, since we have already read it.
+                startIndex++;
+            }
             else if (needPadding && padding == ISOFieldPadding.RIGHT)
             {
-                //Stop before the last half nibble
+                //Stop before the last half nibble, in the loop
                 valueLength--;
             }
-            
+
             // no padding needed just convert to bcd
-            for (int i = startIndex;  i < valueLength; i += 2)
-            {                    
+            for (int i = startIndex; i < valueLength; i += 2)
+            {
                 packedBytes[index] = (byte)((value[i] - 0x30) * 0x10 + value[i + 1] - 0x30);
                 index++;
             }
             if (needPadding && padding == ISOFieldPadding.RIGHT)
             {
+                //read the last remaining nibble in the value and pad the last byte
                 //right nibble padding, take the last nibble and set it as the high part of the byte, leave the low/right side as 0 
                 packedBytes[index] = (byte)((value[valueLength] - 0x30) * 0x10);
                 index++;
@@ -479,14 +481,14 @@ namespace ISO8583Net.Utilities
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static string Bytes2Ascii(byte[] packedBytes, ref int index, int numBytes)
-        {
+        {            
             var result = numBytes <= MaxStackAllocationSize
               ? stackalloc char[numBytes]
               : new char[numBytes];
 
             for (int i = 0; i < numBytes; i++)
             {
-                result[index + i] = (char)packedBytes[index];
+                result[i] = (char)packedBytes[index + i];
             }
 
             index += numBytes;
@@ -540,6 +542,7 @@ namespace ISO8583Net.Utilities
 
             return result;
         }
+        
         /// <summary>
         ///  Convert a byte[] to a hex values string, starting from the index position with lenght numbytes
         /// </summary>
@@ -556,18 +559,20 @@ namespace ISO8583Net.Utilities
                ? stackalloc char[charLength]
                : new char[charLength];
 
+            int k = 0;
             for (int i = 0; i < charLength; i += 2)
             {
-                var val = lookup32[packedBytes[i / 2]];
-
+                var val = lookup32[packedBytes[k + index]];
+                k++;
                 result[i] = (char)val;
 
                 result[i + 1] = (char)(val >> 16);
             }
-                        
+
             index += numBytes;
 
             return result.ToString();
+                        
         }
         /// <summary>
         /// Convert a byte[] to a hex values string
@@ -599,7 +604,7 @@ namespace ISO8583Net.Utilities
         /// <param name="length"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string Bytes2Hex(byte[] bytes, int length)
+        public static string Bytes2HexSpan(byte[] bytes, int length)
         {
             var lookup32 = _lookup32;
 
@@ -607,10 +612,10 @@ namespace ISO8583Net.Utilities
             var result = charLength <= MaxStackAllocationSize
                ? stackalloc char[charLength]
                : new char[charLength];
-            
-            for (int i = 0; i < charLength; i+=2)
+
+            for (int i = 0; i < charLength; i += 2)
             {
-                var val = lookup32[bytes[i/2]];
+                var val = lookup32[bytes[i / 2]];
 
                 result[i] = (char)val;
 
@@ -618,6 +623,34 @@ namespace ISO8583Net.Utilities
             }
 
             return result.ToString();
+        }
+
+        /// <summary>
+        /// Convert a byte[] to a hex values string
+        /// </summary>
+        /// <param name="bytes"></param>
+        /// <param name="length"></param>
+        /// <returns></returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static string Bytes2Hex(byte[] bytes, int length)
+        {            
+            return string.Create(length*2, bytes, (buffer, value) =>
+            {
+                //Do not use length or bytes since this will introduce a closure 
+                //which will prevent the delegate from being cached and require 
+                //an allocation on every call
+                var lookup32 = _lookup32;
+                int k = 0; 
+                for (int i = 0; i < buffer.Length; i += 2)
+                {
+                    //use k to increment 1 by 1 and prevent the division operation
+                    var val = lookup32[value[k]];
+                    k++;
+                    buffer[i] = (char)val;
+                    buffer[i + 1] = (char)(val >> 16);
+                }
+            }
+            );
         }
         /// <summary>
         /// Convert a byte[] to a hex values string
@@ -661,7 +694,7 @@ namespace ISO8583Net.Utilities
             var result = numBytes <= MaxStackAllocationSize
               ? stackalloc char[numBytes]
               : new char[numBytes];
-            
+
             for (int i = 0; i < numBytes; i++)
             {
                 result[i] = (char)os_toascii[packedBytes[index + i]];

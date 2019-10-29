@@ -7,36 +7,6 @@ using BenchmarkDotNet.Diagnostics.Windows.Configs;
 namespace ISO8583NetBenchmark
 {
     [MemoryDiagnoser]
-    //[EtwProfiler] //Create traces for perfview
-    //[SimpleJob(RuntimeMoniker.NetCoreApp21)]
-    //[SimpleJob(RuntimeMoniker.NetCoreApp30)]
-    [SimpleJob(RunStrategy.Throughput, targetCount: 30, id: "MonitoringJob")]
-    //[MinColumn, Q1Column, Q3Column, MaxColumn]
-    public class HexUtilsTest
-    {
-        private byte[] bytes;
-        
-        [GlobalSetup]
-        public void GlobalSetup()
-        {
-            string stringhex = "29001234567890123456193012121959";
-            bytes = ISO8583Net.Utilities.ISOUtils.Hex2Bytes(stringhex);
-        }
-
-        [Benchmark]
-        public string Bytes2Hex()
-        {
-            return ISO8583Net.Utilities.ISOUtils.Bytes2HexOld(bytes, bytes.Length);            
-        }
-
-        [Benchmark]
-        public string Bytes2Hex2()
-        {            
-            return ISO8583Net.Utilities.ISOUtils.Bytes2Hex(bytes, bytes.Length);
-        }
-
-    }
-    [MemoryDiagnoser]
     [EtwProfiler] //Create traces for perfview
     //[SimpleJob(RuntimeMoniker.NetCoreApp21)]
     //[SimpleJob(RuntimeMoniker.NetCoreApp30)]

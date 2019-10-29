@@ -26,8 +26,11 @@ namespace ISO8583Tests
             string oldValue = ISOUtils.Bytes2HexOld(bytes, stringhex.Length/2);
             Assert.Equal(stringhex, oldValue);
 
-            string newValue = ISOUtils.Bytes2Hex(bytes, stringhex.Length/2);
-            Assert.Equal(stringhex, oldValue);
+            string newValue = ISOUtils.Bytes2HexSpan(bytes, stringhex.Length/2);
+            Assert.Equal(stringhex, newValue);
+
+            string newValueSc = ISOUtils.Bytes2Hex(bytes, stringhex.Length / 2);
+            Assert.Equal(stringhex, newValueSc);
         }
 
         [Fact]

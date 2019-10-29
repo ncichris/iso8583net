@@ -111,6 +111,7 @@ namespace ISO8583Net.Header
 
             //if (Logger.IsEnabled(LogLevel.Information)) Logger.LogInformation("Unpacking VISA Header");
 
+            //Read header length
             string lenHex = ISOUtils.Bytes2Hex(bytes, ref index, 1);
 
             m_length = ISOUtils.Hex2Bytes(lenHex)[0]; 

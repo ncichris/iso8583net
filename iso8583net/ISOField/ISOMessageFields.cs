@@ -173,7 +173,7 @@ namespace ISO8583Net.Field
         /// <returns></returns>
         public override string GetFieldValue(int fieldNumber)
         {
-            return m_isoFields[fieldNumber].value; 
+            return m_isoFields[fieldNumber]?.value; 
         }
         /// <summary>
         /// 

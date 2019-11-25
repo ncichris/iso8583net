@@ -2,6 +2,7 @@
 using ISO8583Net.Types;
 using ISO8583Net.Utilities;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Text;
 
 namespace ISO8583Net.Packager
@@ -272,7 +273,7 @@ namespace ISO8583Net.Packager
         {
 
         }
-        
+
         /// <summary>
         /// 
         /// </summary>
@@ -281,15 +282,12 @@ namespace ISO8583Net.Packager
         /// <param name="index"></param>
         public override void Pack(ISOComponent isoField, byte[] packedBytes, ref int index)
         {
-            string isoFieldValue = isoField.value;
+            string isoFieldValue;
 
-            if (m_isoFieldDefinition.lengthFormat == ISOFieldLengthFormat.FIXED)
+            //add the length indicator
+            if (m_isoFieldDefinition.lengthFormat == ISOFieldLengthFormat.VAR)
             {
-                // Logger.LogDebug("ISOField [" + m_number + "] is of FIXED length format");
-                // Do nothing, there is no length indicator
-            }
-            else if (m_isoFieldDefinition.lengthFormat == ISOFieldLengthFormat.VAR)
-            {
+                isoFieldValue = isoField.value;
                 // variable length format, check how many units of m_isoFieldDefinition.m_lengthCoding we should use
                 switch (m_isoFieldDefinition.lengthCoding)
                 {
@@ -312,6 +310,7 @@ namespace ISO8583Net.Packager
                     case ISOFieldCoding.BCD:
                         //if (Logger.IsEnabled(LogLevel.Debug)) Logger.LogDebug("ISOField [" + m_number + "] is of variable length and of BCD format with lengthIndicator=[" + m_isoFieldDefinition.m_lengthLength + "] BCD Nibles");
                         // convert bcd digits to byte values - lengthlength = number of bcd nipples (1 byte has 2 nibbles and padding should be used) 
+                        ISOUtils.Bcd2Bytes(isoFieldValue.Length, packedBytes, ref index, m_isoFieldDefinition.lengthLength);
                         break;
 
                     default:
@@ -319,11 +318,45 @@ namespace ISO8583Net.Packager
                         break;
                 }
             }
+            //FIXED
             else
             {
-                //if (Logger.IsEnabled(LogLevel.Critical)) Logger.LogCritical("Error packaging field [" + m_number + "]. Field Length Format is Invalid!");
-            }
+                //Check that the length is correct or pad accordingly
+                int expectedLength = m_isoFieldDefinition.length;
+                char paddingChar = (char)m_isoFieldDefinition.contentPaddingCharacter;
+                if (m_isoFieldDefinition.content == ISOFieldContent.HD)
+                {
+                    isoFieldValue = isoField.value;
+                }
+                else
+                {
+                    if (m_isoFieldDefinition.contentCoding == ISOFieldCoding.ASCII || m_isoFieldDefinition.contentCoding == ISOFieldCoding.EBCDIC)
+                    {
+                        //Length is defined in bytes
+                        if (paddingChar == 0)
+                        {
+                            paddingChar = ' ';
+                        }
+                    }
+                    if (isoField.value.Length < expectedLength)
+                    {
+                        if (m_isoFieldDefinition.contentPadding == ISOFieldPadding.LEFT)
+                        {
+                            isoFieldValue = isoField.value.PadLeft(expectedLength, paddingChar);
+                        }
+                        else
+                        {
+                            isoFieldValue = isoField.value.PadRight(expectedLength, paddingChar);
+                        }
 
+                    }
+                    else
+                    {
+                        isoFieldValue = isoField.value;
+                    }
+                }
+            }
+           
             // handle content coding
 
             // if is of type ISOMessageFields then dont try pack the content as is invalid 
@@ -335,7 +368,7 @@ namespace ISO8583Net.Packager
                 switch (m_isoFieldDefinition.contentCoding)
                 {
                     case ISOFieldCoding.BCD:
-                        ISOUtils.Ascii2Bcd(isoFieldValue, packedBytes, ref index, m_isoFieldDefinition.contentPadding);
+                        ISOUtils.Ascii2Bcd(isoFieldValue, packedBytes, ref index, m_isoFieldDefinition.contentPadding, m_isoFieldDefinition.contentPaddingCharacter);
                         break;
 
                     case ISOFieldCoding.ASCII:
@@ -371,7 +404,7 @@ namespace ISO8583Net.Packager
         /// <param name="isoField"></param>
         /// <param name="packedBytes"></param>
         /// <param name="index"></param>
-        public override void UnPack(ISOComponent isoField, byte[] packedBytes, ref int index)
+        public override void UnPack(ISOComponent isoField, ReadOnlySpan<byte> packedBytes, ref int index)
         {
             //if (Logger.IsEnabled(LogLevel.Debug)) Logger.LogDebug("Trying to Unpack Field [" + m_number.ToString().PadLeft(3, '0') + "]");
 
@@ -394,6 +427,7 @@ namespace ISO8583Net.Packager
                 if (m_isoFieldDefinition.lengthCoding == ISOFieldCoding.BCD)
                 {
                     // adjust legnthToRead
+                    lengthToRead = ISOUtils.BytesBcd2Int(packedBytes, ref index, m_isoFieldDefinition.lengthLength);
 
                 }
                 else if (m_isoFieldDefinition.lengthCoding == ISOFieldCoding.ASCII)
@@ -404,7 +438,6 @@ namespace ISO8583Net.Packager
                 else if (m_isoFieldDefinition.lengthCoding == ISOFieldCoding.BIN)
                 {
                     // adjust legnthToRead
-
                     lengthToRead = ISOUtils.Bytes2Int(packedBytes, ref index, m_isoFieldDefinition.lengthLength); // !!! hmmm this value is not bytes, it depends on content coding !! 
 
                     //if (Logger.IsEnabled(LogLevel.Debug)) Logger.LogDebug("Length of VARIABLE Field [" + m_number.ToString().PadLeft(3, '0') + "] is [" + lengthToRead + "]");
@@ -514,14 +547,15 @@ namespace ISO8583Net.Packager
                     strBuilder.Append("Length in bytes: " + m_isoFieldDefinition.length);
                     break;
             }
-            strBuilder.Append("  Length Length: " + m_isoFieldDefinition.lengthLength   + "\n");
-            strBuilder.Append("  Length Format: " + m_isoFieldDefinition.lengthFormat   + "\n");
-            strBuilder.Append("  Length Coding: " + m_isoFieldDefinition.lengthCoding   + "\n");
+            strBuilder.Append(" Length Length: " + m_isoFieldDefinition.lengthLength   + "\n");
+            strBuilder.Append(" Length Format: " + m_isoFieldDefinition.lengthFormat   + "\n");
+            strBuilder.Append(" Length Coding: " + m_isoFieldDefinition.lengthCoding   + "\n");
             strBuilder.Append(" Length Padding: " + m_isoFieldDefinition.lengthPadding  + "\n");
             strBuilder.Append(" Content Format: " + m_isoFieldDefinition.content        + "\n");
             strBuilder.Append(" Content Coding: " + m_isoFieldDefinition.contentCoding  + "\n");
-            strBuilder.Append("Content Padding: " + m_isoFieldDefinition.contentPadding + "\n");
-            strBuilder.Append("    Description: " + m_isoFieldDefinition.description    + "\n");
+            strBuilder.Append(" Content Padding: " + m_isoFieldDefinition.contentPadding + "\n");
+            strBuilder.Append(" Content Padding Char: " + m_isoFieldDefinition.contentPaddingCharacter + "\n");
+            strBuilder.Append(" Description: " + m_isoFieldDefinition.description    + "\n");
 
             return strBuilder.ToString();
         }
@@ -569,14 +603,15 @@ namespace ISO8583Net.Packager
 
             if (Logger.IsEnabled(LogLevel.Trace))
             {
-                Logger.LogTrace("  Length Length: " + m_isoFieldDefinition.lengthLength.ToString());
-                Logger.LogTrace("  Length Format: " + m_isoFieldDefinition.lengthFormat);
-                Logger.LogTrace("  Length Coding: " + m_isoFieldDefinition.lengthCoding);
+                Logger.LogTrace(" Length Length: " + m_isoFieldDefinition.lengthLength.ToString());
+                Logger.LogTrace(" Length Format: " + m_isoFieldDefinition.lengthFormat);
+                Logger.LogTrace(" Length Coding: " + m_isoFieldDefinition.lengthCoding);
                 Logger.LogTrace(" Length Padding: " + m_isoFieldDefinition.lengthPadding);
                 Logger.LogTrace(" Content Format: " + m_isoFieldDefinition.content);
                 Logger.LogTrace(" Content Coding: " + m_isoFieldDefinition.contentCoding);
-                Logger.LogTrace("Content Padding: " + m_isoFieldDefinition.contentPadding);
-                Logger.LogTrace("    Description: " + m_isoFieldDefinition.description);
+                Logger.LogTrace(" Content Padding: " + m_isoFieldDefinition.contentPadding);
+                Logger.LogTrace(" Content Padding Char: " + m_isoFieldDefinition.contentPaddingCharacter);
+                Logger.LogTrace(" Description: " + m_isoFieldDefinition.description);
             }
         }
     }

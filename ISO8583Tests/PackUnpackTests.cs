@@ -16,7 +16,72 @@ namespace ISO8583Tests
     public class PackUnpackTests
     {
         private ILogger logger = new Microsoft.Extensions.Logging.Abstractions.NullLogger<PackUnpackTests>();
+        [Theory]
+        [InlineData(new byte[] { 0x16 })]
+        [InlineData(new byte[] { 0x16, 0x16 })]
+        public void Bytes2IntWorks(byte[] data)
+        {            
+            int index = 0;
+            int value = ISOUtils.Bytes2Int(data, ref index, data.Length * 2);
+            if (data.Length == 1)
+                Assert.Equal(0x16, value);
+            if (data.Length == 2)
+                Assert.Equal((0x16 * 0x100) + 0x16, value);
+        }
 
+        [Theory]
+        [InlineData(new byte[] { 0x16 })]
+        [InlineData(new byte[] { 0x16, 0x16 })]
+        public void BytesBcd2IntWorks(byte[] data)
+        {            
+            int index = 0;
+            int value = ISOUtils.BytesBcd2Int(data, ref index, data.Length * 2);
+            
+            if (data.Length == 1)
+                Assert.Equal(16, value);
+            if (data.Length == 2)
+                Assert.Equal((16 * 100) + 16, value);
+        }
+
+        [Theory]
+        [InlineData(0x16)]
+        [InlineData(0x1616)]
+        public void Int2BytesWorks(int data)
+        {
+            int index = 0;
+            byte[] packedBytes = new byte[2]; 
+            ISOUtils.Int2Bytes(data, packedBytes, ref index, data.ToString().Length);
+            if (data.ToString().Length == 2)
+                Assert.Equal(0x16, packedBytes[0]);
+            if (data.ToString().Length == 4)
+            {
+                Assert.Equal(0x16, packedBytes[0]);
+                Assert.Equal(0x16, packedBytes[1]);
+            }
+        }
+
+        [Theory]
+        [InlineData(16)]
+        [InlineData(1616)]
+        [InlineData(2345)]        
+        public void Bcd2BytesWorks(int data)
+        {
+            int index = 0;
+            byte[] packedBytes = new byte[2];
+            ISOUtils.Bcd2Bytes(data, packedBytes, ref index, data.ToString().Length);
+            if (data.ToString() == "16")
+                Assert.Equal(0x16, packedBytes[0]);
+            else if (data.ToString() == "1616")
+            {
+                Assert.Equal(0x16, packedBytes[0]);
+                Assert.Equal(0x16, packedBytes[1]);
+            }
+            else
+            {
+                Assert.Equal(0x23, packedBytes[0]);
+                Assert.Equal(0x45, packedBytes[1]);
+            }
+        }
         [Fact]
         public void ParseVisaMessage()
         {

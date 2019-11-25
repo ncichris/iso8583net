@@ -48,7 +48,7 @@ namespace ISO8583Tests
             byte[] buffer = new byte[50];
             byte[] oldbuffer = new byte[50];
             int currentIndex = 0;
-            ISOUtils.Ascii2Bcd("12341234", buffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.LEFT);
+            ISOUtils.Ascii2Bcd("12341234", buffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.LEFT, 0);
             currentIndex = 0;
             ISOUtils.Ascii2BcdOld("12341234", oldbuffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.LEFT);
             Compare(buffer, oldbuffer, currentIndex);
@@ -57,7 +57,7 @@ namespace ISO8583Tests
             Assert.Equal("12341234", asciiResult);
 
             currentIndex = 0;
-            ISOUtils.Ascii2Bcd("12341234", buffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.RIGHT);
+            ISOUtils.Ascii2Bcd("12341234", buffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.RIGHT, 0);
             currentIndex = 0;
             ISOUtils.Ascii2BcdOld("12341234", oldbuffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.RIGHT);
             Compare(buffer, oldbuffer, currentIndex);
@@ -66,7 +66,7 @@ namespace ISO8583Tests
             Assert.Equal("12341234", asciiResult);
 
             currentIndex = 0;
-            ISOUtils.Ascii2Bcd("1234123", buffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.LEFT);
+            ISOUtils.Ascii2Bcd("1234123", buffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.LEFT, 0);
             currentIndex = 0;
             ISOUtils.Ascii2BcdOld("1234123", oldbuffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.LEFT);
             Compare(buffer, oldbuffer, currentIndex);
@@ -76,7 +76,7 @@ namespace ISO8583Tests
 
 
             currentIndex = 0;
-            ISOUtils.Ascii2Bcd("1234123", buffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.RIGHT);
+            ISOUtils.Ascii2Bcd("1234123", buffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.RIGHT, 0);
             currentIndex = 0;
             ISOUtils.Ascii2BcdOld("1234123", oldbuffer, ref currentIndex, ISO8583Net.Types.ISOFieldPadding.RIGHT);
             Compare(buffer, oldbuffer, currentIndex);

@@ -5,8 +5,14 @@ using System.Linq;
 
 namespace ISO8583Net.Field
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class BerTLV
     {
+        /// <summary>
+        /// Number of Objects in the TLV
+        /// </summary>
         public int NbOfObjects
         {
             get { return elementPool.Count; }
@@ -16,6 +22,9 @@ namespace ISO8583Net.Field
 
         private List<BerTLVObject> elementPool = new List<BerTLVObject>();
 
+        /// <summary>
+        /// Objects included in the TLV
+        /// </summary>
         public List<BerTLVObject> ObjectList
         {
             get { return elementPool; }
@@ -25,6 +34,9 @@ namespace ISO8583Net.Field
 
         private List<string> knownTags = null;
 
+        /// <summary>
+        /// List of known tags
+        /// </summary>
         public List<string> KnownTags
         {
             set
@@ -33,11 +45,20 @@ namespace ISO8583Net.Field
             }
         }
 
+        /// <summary>
+        /// Parse a byte array containing the encoded TLV
+        /// </summary>
+        /// <param name="encodedTLV"></param>
         public void Parse(byte[] encodedTLV)
         {
             _Parse(encodedTLV);
         }
 
+        /// <summary>
+        /// Internal Parse
+        /// </summary>
+        /// <param name="encodedTLV"></param>
+        /// <returns></returns>
         private int _Parse(byte[] encodedTLV)
         {
             string TLVTag;
@@ -112,7 +133,11 @@ namespace ISO8583Net.Field
             return TagSize + LenSize + TLVData.Length;
         }
 
-        public void addTLVObject(BerTLVObject tlvObj)
+        /// <summary>
+        /// Add a new object to the TLV
+        /// </summary>
+        /// <param name="tlvObj"></param>
+        public void AddTLVObject(BerTLVObject tlvObj)
         {
             if (tlvObj == null)
                 return;
@@ -120,7 +145,12 @@ namespace ISO8583Net.Field
             elementPool.Add(tlvObj);
         }
 
-        public BerTLVObject getFirstObject(string tag)
+        /// <summary>
+        /// Get first object with tag == tag
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        public BerTLVObject GetFirstObject(string tag)
         {
             foreach (BerTLVObject obj in this.ObjectList)
             {
@@ -131,7 +161,12 @@ namespace ISO8583Net.Field
             return null;
         }
 
-        public BerTLVObject getObjectAt(int index)
+        /// <summary>
+        /// Get object at location index
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public BerTLVObject GetObjectAt(int index)
         {
             if (index >= elementPool.Count)
                 return null;
@@ -139,7 +174,12 @@ namespace ISO8583Net.Field
             return elementPool.ElementAt(index);
         }
 
-        public List<BerTLVObject> getObjectList(string tag)
+        /// <summary>
+        /// Get list of objects
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <returns></returns>
+        public List<BerTLVObject> GetObjectList(string tag)
         {
             List<BerTLVObject> tlvList = new List<BerTLVObject>();
 

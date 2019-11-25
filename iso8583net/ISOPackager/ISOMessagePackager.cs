@@ -31,7 +31,7 @@ namespace ISO8583Net.Packager
         /// <param name="fileName"></param>
         public ISOMessagePackager(ILogger logger, string fileName) : base (logger)
         {
-            ISOPackagerLoader isoPackagerLoader = new ISOPackagerLoader(Logger, fileName, ref m_msgFieldsPackager);
+            _ = new ISOPackagerLoader(Logger, fileName, ref m_msgFieldsPackager);
 
             m_totalFields = m_msgFieldsPackager.GetTotalFields();
         }
@@ -41,7 +41,7 @@ namespace ISO8583Net.Packager
         /// <param name="logger"></param>
         public ISOMessagePackager(ILogger logger) : base(logger)
         {
-            ISOPackagerLoader isoPackagerLoader = new ISOPackagerLoader(Logger, ref m_msgFieldsPackager);
+            _ = new ISOPackagerLoader(Logger, ref m_msgFieldsPackager);
 
             m_totalFields = m_msgFieldsPackager.GetTotalFields();
         }
@@ -61,7 +61,7 @@ namespace ISO8583Net.Packager
         /// <param name="isoField"></param>
         /// <param name="packedBytes"></param>
         /// <param name="index"></param>
-        public override void UnPack(ISOComponent isoField, byte[] packedBytes, ref int index)
+        public override void UnPack(ISOComponent isoField, ReadOnlySpan<byte> packedBytes, ref int index)
         {
             m_msgFieldsPackager.UnPack(isoField, packedBytes, ref index);
         }

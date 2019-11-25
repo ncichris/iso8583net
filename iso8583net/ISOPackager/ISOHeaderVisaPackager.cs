@@ -9,6 +9,70 @@ namespace ISO8583Net.Packager
     /// <summary>
     /// 
     /// </summary>
+    public class ISOHeaderTITPPackager : ISOHeaderPackager
+    {
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="logger"></param>
+        public ISOHeaderTITPPackager(ILogger logger) : base(logger)
+        {
+
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="isoHeader"></param>
+        /// <param name="packedBytes"></param>
+        /// <param name="index"></param>
+        public override void Pack(ISOHeader isoHeader, byte[] packedBytes, ref int index)
+        {
+            ISOHeaderTITP terminalHeader = (ISOHeaderTITP)isoHeader;
+            terminalHeader.Payload.CopyTo(packedBytes, index);
+            index += terminalHeader.Payload.Length;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bytes"></param>
+        public override void Set(byte[] bytes)
+        {
+            throw new NotImplementedException();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        public override void Trace()
+        {
+            throw new NotImplementedException();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public override string ToString()
+        {
+            return base.ToString();
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="isoHeader"></param>
+        /// <param name="packedBytes"></param>
+        /// <param name="index"></param>
+        public override void UnPack(ISOHeader isoHeader, ReadOnlySpan<byte> packedBytes, ref int index)
+        {
+            
+            if (Logger.IsEnabled(LogLevel.Information)) Logger.LogInformation("Unpacking TITP Header");
+            ISOHeaderTITP terminalHeader = (ISOHeaderTITP)isoHeader;
+            int length = terminalHeader.Payload.Length;
+            packedBytes.Slice(index, length).CopyTo(terminalHeader.Payload);
+            index += length;
+        }
+    }
+    /// <summary>
+    /// 
+    /// </summary>
     public class ISOHeaderVisaPackager : ISOHeaderPackager
     {
         /// <summary>
@@ -37,9 +101,9 @@ namespace ISO8583Net.Packager
 
             ISOUtils.Hex2Bytes(visaHeader.h04_TotalMessageLength, packedBytes, ref index);
 
-            ISOUtils.Ascii2Bcd(visaHeader.h05_DestinationStationId, packedBytes, ref index, ISOFieldPadding.LEFT);
+            ISOUtils.Ascii2Bcd(visaHeader.h05_DestinationStationId, packedBytes, ref index, ISOFieldPadding.LEFT, 0);
 
-            ISOUtils.Ascii2Bcd(visaHeader.h06_SourceStationId, packedBytes, ref index, ISOFieldPadding.LEFT);
+            ISOUtils.Ascii2Bcd(visaHeader.h06_SourceStationId, packedBytes, ref index, ISOFieldPadding.LEFT, 0);
 
             ISOUtils.Hex2Bytes(visaHeader.h07_RoundTripControlInformation, packedBytes, ref index);
 
@@ -82,7 +146,7 @@ namespace ISO8583Net.Packager
         /// <param name="isoHeader"></param>
         /// <param name="packedBytes"></param>
         /// <param name="index"></param>
-        public override void UnPack(ISOHeader isoHeader, byte[] packedBytes, ref int index)
+        public override void UnPack(ISOHeader isoHeader, ReadOnlySpan<byte> packedBytes, ref int index)
         {
             // Unpack should check for existense of Header Field 13 always
 

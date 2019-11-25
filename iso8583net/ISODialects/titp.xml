@@ -1,0 +1,149 @@
+<?xml version="1.0"?>
+<isopackager name="TITP" 
+             version="1.0"
+             description="TITP"
+             summary=""
+             updated="13/11/2019"
+             totalfields="64"
+             bcdlengthpadding="LEFT"
+             bcdcontentpadding="LEFT"
+             headerpackager="ISOHeaderTITPPackager">
+  <messages>
+    <message type="0100" name="Authorization Request"                      desc="" f000="M" f001="M" />
+    <message type="0110" name="Authorization Request Response"             desc="" f000="M" f001="M" />
+    <message type="0200" name="Financial Transaction Request"              desc="" f000="M" f001="M" />
+    <message type="0210" name="Financial Transaction Request Response"     desc="" f000="M" f001="M" />
+    <message type="0220" name="Financial Transaction Advice"               desc="" f000="M" f001="M" />
+    <message type="0230" name="Financial Transaction Advice Response"      desc="" f000="M" f001="M" />
+    <message type="0320" name="Batch Upload Request"                       desc="" f000="M" f001="M" />
+    <message type="0330" name="Batch Upload Response"                      desc="" f000="M" f001="M" />
+    <message type="0400" name="Reversal Advice"                            desc="" f000="M" f001="M" />
+    <message type="0410" name="Reversal Advice Response"                   desc="" f000="M" f001="M" />
+    <message type="0500" name="Settlement Request"                         desc="" f000="M" f001="M" />
+    <message type="0510" name="Settlement Response"                        desc="" f000="M" f001="M" />
+    <message type="0800" name="Network Management Request"                 desc="" f000="M" f001="M" />
+    <message type="0810" name="Network Management Request Response"        desc="" f000="M" f001="M" />
+  </messages>
+  <isofields>
+    <isofield number="000" name="Message Type Identifier"                                       lengthformat="FIXED" lengthlength="0" length="4"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="LEFT"                                     desc=""/>
+    <isofield number="001" name="Bitmap"                                                        lengthformat="FIXED" lengthlength="0" length="32"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="HD" contentcoding="BIN" contentpadding="LEFT" storageclass="Field.ISOFieldBitmap" desc=""/>
+    <isofield number="002" name="Primary Account Number (PAN)"                                  lengthformat="VAR"   lengthlength="2" length="19"  lengthcoding="BCD" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="RIGHT" contentpaddingcharacter="F"        desc=""/>
+    <isofield number="003" name="Processing Code"                                               lengthformat="FIXED" lengthlength="0" length="6"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="LEFT"                                     desc="" interpreter="ISOIndexedValueInterpreter">
+      <interpreter index="00" length="2" desc="Type of cardholder transaction or center function being processed">
+        <value value="00" desc="Goods/Service Purchase POS transaction only (0200/0220)"/>
+        <value value="01" desc="Withdrawal/Cash Advance (0200/0220)"/>
+        <value value="02" desc="Void (0200/0220)"/>
+        <value value="03" desc="Void if (0200) F4=0, Adjust (0220) if P4>0"/>
+        <value value="04" desc="Pre-Purchase Increment (0100)"/>
+        <value value="09" desc="Pre-Purchase Increment (0100)"/>        
+        <value value="11" desc="Quasi-Cash Transaction, POS transaction only (0200/0220)"/>
+        <value value="17" desc="Cash Advance (0200/0220)"/>
+        <value value="20" desc="Deposit (0200 and MCC 6010), or Return of Goods Credit Credit Voucher (0220)"/>
+        <value value="21" desc="Deposit (0200 and MCC 6010), or Return of Goods Credit Credit Voucher (0220)"/>
+        <value value="22" desc="Void (0200) or Adjust Return (0220)"/>
+        <value value="23" desc="Purchase Cancellation (0100/0200)"/>
+        <value value="30" desc="Card Verification (0100)"/>
+        <value value="31" desc="Balance Inquiry (0100/0200)"/>
+        <value value="33" desc="Void (0200) or Adjust Return (0220)"/>
+        <value value="34" desc="Statement Request (0200)"/>
+        <value value="38" desc="Card Verification (0100/0200)"/>
+        <value value="40" desc="Cardholder Account Transfer (0200/0220)"/>
+        <value value="41" desc="POS Transfer Credit (0200/0220)"/>
+        <value value="50" desc="Payment (0200/0220)"/>
+        <value value="51" desc="Payment Precheck (0200)"/>
+        <value value="53" desc="Prepaid (0200/0220)"/>
+        <value value="59" desc="POS Message to Institution (0200/0220)"/>
+        <value value="61" desc="P2P Card Transfer (0200)"/>
+        <value value="62" desc="P2P Cash Transfer (0200/0220)"/>
+        <value value="63" desc="P2P Transfer Calc Fee (0200)"/>
+        <value value="70" desc="PIN Change (0200)"/>
+        <value value="71" desc="Internet PIN Change (0200)"/>
+        <value value="72" desc="POS Cardless Get Rates (0100)"/>
+        <value value="80" desc="Accumulate Bonus (0200)"/>
+        <value value="81" desc="Redeem Bonus (0200)"/>
+        <value value="91" desc="TC Advice (0320)"/>
+        <value value="92" desc="Settlement Request (0500)"/>
+        <value value="96" desc="Settlement After Upload (0500)"/>
+        <value value="97" desc="Cutover Request (0500)"/>
+        <value value="99" desc="Echo Test (0800"/>        
+      </interpreter>
+      <interpreter index="02" length="2" desc="Account type affected by this transaction">
+        <value value="00" desc="Not Applicable or Not Specified"/>
+        <value value="10" desc="Savings Account"/>
+        <value value="20" desc="Checking Account"/>
+        <value value="30" desc="Credit Card Account"/>
+        <value value="91" desc="Bonus Account"/>
+      </interpreter>
+      <interpreter index="04" length="2" desc="Account type to which an account transfer is made (if last nibble==4 the terminal config update)">
+        <value value="00" desc="Not Applicable or Not Specified"/>
+        <value value="10" desc="Savings Account"/>
+        <value value="20" desc="Checking Account"/>
+        <value value="30" desc="Credit Card Account"/>        
+      </interpreter>
+    </isofield>
+    <isofield number="004" name="Amount, Transaction"                                           lengthformat="FIXED" lengthlength="0" length="12"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="LEFT" desc=""/>
+    <isofield number="011" name="Systems Trace Audit Number"                                    lengthformat="FIXED" lengthlength="0" length="6"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="LEFT" desc=""/>
+    <isofield number="012" name="Time, Local Transaction (HHMMSS)"                              lengthformat="FIXED" lengthlength="0" length="6"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="LEFT" desc=""/>
+    <isofield number="013" name="Date, Local Transaction (MMDD)"                                lengthformat="FIXED" lengthlength="0" length="4"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="LEFT" desc=""/>
+    <isofield number="014" name="Date, Expiration (YYMM)"                                       lengthformat="FIXED" lengthlength="0" length="4"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="LEFT" desc=""/>
+    <isofield number="022" name="Point-of-Service Entry Mode Code"                              lengthformat="FIXED" lengthlength="0" length="4"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"  contentcoding="BCD" contentpadding="LEFT" desc="" interpreter="ISOIndexedValueInterpreter">
+      <interpreter index="00" length="2" desc="PAN and Date Entry Mode">
+        <value value="00" desc="Unknown or terminal not used"/>
+        <value value="01" desc="Manual key entry"/>
+        <value value="02" desc="Magnetic stripe read; CVV checking may not be possible Plus: ExactTrack2contents read, but transaction is not eligible for CVV checking"/>
+        <value value="03" desc="Barcode read"/>
+        <value value="04" desc="Not used, reserved for future use"/>
+        <value value="05" desc="Integrated circuit card read; CVV or iCVV checking is possible"/>
+        <value value="06" desc="Not used, reserved for future use"/>
+        <value value="07" desc="Contactless payment using VSDC chip rules"/>
+        <value value="09" desc="Magnetic stripe read and exact content of Track 1 or Track 2 included(CVV check is possible)"/>
+        <value value="90" desc="Magnetic stripe read and exact content of Track 1 or Track 2 included(CVV check is possible)"/>
+        <value value="91" desc="Contactless payment using magnetic stripe data rules"/>
+        <value value="95" desc="Integrated circuit card; CVV oriCVVcheckingmaynotbe possible"/>
+      </interpreter>
+      <interpreter index="02" length="1" desc="PIN Entry Capability">
+        <value value="0" desc="Unknown"/>
+        <value value="1" desc="Terminal can accept PINs"/>
+        <value value="2" desc="Terminal cannot accept PINs"/>
+        <value value="8" desc="Terminal PIN pad is down"/>
+        <value value="9" desc="Reserved for future use"/>
+      </interpreter>
+      <interpreter index="03" length="1" desc="Unused">
+        <value value="0" desc="Unused"/>
+      </interpreter>
+    </isofield>
+    <isofield number="023" name="Card Sequence Number"                                          lengthformat="FIXED" lengthlength="0" length="3"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"   contentcoding="BCD"    contentpadding="LEFT" desc=""/>
+    <isofield number="024" name="Network International Identifier (not used)"                   lengthformat="FIXED" lengthlength="0" length="3"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"   contentcoding="BCD"    contentpadding="LEFT" desc=""/>
+    <isofield number="025" name="Point-of-Service Condition Code"                               lengthformat="FIXED" lengthlength="0" length="2"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"   contentcoding="BCD"    contentpadding="LEFT" desc="" interpreter="ISOIndexedValueInterpreter">
+      <interpreter index="00" length="2" desc="POS Condition Code">
+        <value value="00" desc="Normal"/>
+        <value value="03" desc="Merchant Suspicious"/>
+        <value value="05" desc="Card not present"/>
+        <value value="08" desc="Mail/Phone Order"/>
+        <value value="53" desc="Installment Payment"/>
+        <value value="63" desc="Recurring Payment - EMV Chip"/>
+        <value value="67" desc="Installment Payment - EMV Chip"/>        
+      </interpreter>
+    </isofield>
+    <isofield number="035" name="Track 2 Data"                                                  lengthformat="VAR"   lengthlength="2" length="38"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="Z"   contentcoding="Z"      contentpadding="RIGHT" contentpaddingcharacter="F" desc=""/>
+    <isofield number="037" name="Retrieval Reference Number"                                    lengthformat="FIXED" lengthlength="0" length="12"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS"   contentcoding="ASCII" contentpaddingcharacter="0" contentpadding="LEFT" desc=""/>
+    <isofield number="038" name="Authorization Identification Response"                         lengthformat="FIXED" lengthlength="0" length="6"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS"  contentcoding="ASCII" contentpadding="RIGHT" desc=""/>
+    <isofield number="039" name="Response Code"                                                 lengthformat="FIXED" lengthlength="0" length="2"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS"  contentcoding="ASCII" contentpadding="RIGHT" desc=""/>
+    <isofield number="041" name="Card Acceptor Terminal Identification"                         lengthformat="FIXED" lengthlength="0" length="8"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="RIGHT" desc=""/>
+    <isofield number="042" name="Card Acceptor Identification Code"                             lengthformat="FIXED" lengthlength="0" length="15"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="RIGHT" desc=""/>
+    <isofield number="045" name="Track 1 Data"                                                  lengthformat="VAR"   lengthlength="2" length="76"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="RIGHT" desc=""/>
+    <isofield number="048" name="Working Keys"                                                  lengthformat="FIXED" lengthlength="0" length="34" lengthcoding="BIN" lengthpadding="LEFT" contentformat="HD" contentcoding="BIN" contentpadding="LEFT" desc=""/>
+    <isofield number="049" name="Currency Code, Transaction"                                    lengthformat="FIXED" lengthlength="0" length="3"   lengthcoding="BIN" lengthpadding="LEFT" contentformat="N"   contentcoding="BCD"    contentpadding="LEFT" desc=""/>
+    <isofield number="052" name="Personal Identification Number (PIN) Data"                     lengthformat="FIXED" lengthlength="0" length="16"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="HD"  contentcoding="BIN"    contentpadding="LEFT" desc=""/>
+    <isofield number="054" name="Additional Amounts"                                            lengthformat="VAR"   lengthlength="2" length="120" lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="LEFT" desc=""/>
+    <isofield number="055" name="Integrated Circuit Card (ICC) Related Data"                    lengthformat="VAR"   lengthlength="2" length="255" lengthcoding="BIN" lengthpadding="LEFT" contentformat="HD" contentcoding="BIN" contentpadding="LEFT" desc=""/>
+    <isofield number="056" name="Additional Data 2"                                             lengthformat="VAR"   lengthlength="2" length="255" lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="LEFT" desc=""/>
+    <isofield number="057" name="Additional Data"                                               lengthformat="VAR"   lengthlength="2" length="255" lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="LEFT" desc=""/>
+    <isofield number="058" name="Detail Addenda External"                                       lengthformat="VAR"   lengthlength="2" length="255" lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="LEFT" desc=""/>
+    <isofield number="059" name="Detail Addenda"                                                lengthformat="VAR"   lengthlength="2" length="255"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="LEFT" desc=""/>
+    <isofield number="060" name="Private Use"                                                   lengthformat="VAR"   lengthlength="2" length="255"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="LEFT" desc=""/>
+    <isofield number="062" name="Invoice Number - Working Keys"                                 lengthformat="VAR"   lengthlength="2" length="255"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="LEFT" desc=""/>
+    <isofield number="063" name="Private Use 3 LTV Tags"                                        lengthformat="VAR"   lengthlength="2" length="255"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="ANS" contentcoding="ASCII" contentpadding="LEFT" desc=""/>
+    <isofield number="064" name="Message Authentication Code"                                   lengthformat="FIXED" lengthlength="0" length="16"  lengthcoding="BIN" lengthpadding="LEFT" contentformat="HD"  contentcoding="BIN"    contentpadding="LEFT" desc=""/>    
+  </isofields>
+</isopackager>

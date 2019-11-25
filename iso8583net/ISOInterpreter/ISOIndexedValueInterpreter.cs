@@ -47,7 +47,7 @@ namespace ISO8583Net.Interpreter
         {
             if (m_indexLength.ContainsKey(index))
             {
-                if (Logger.IsEnabled(LogLevel.Warning)) Logger.LogWarning("IindexLength dictionary already has an entry for index [" + index.ToString() + "] length [ " + length.ToString() + "]");
+                if (Logger.IsEnabled(LogLevel.Warning)) Logger.LogWarning("IndexLength dictionary already has an entry for index [" + index.ToString() + "] length [ " + length.ToString() + "]");
             }
             else
             {

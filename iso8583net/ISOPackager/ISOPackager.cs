@@ -140,7 +140,7 @@ namespace ISO8583Net.Packager
         /// <param name="isoField"></param>
         /// <param name="packedBytes"></param>
         /// <param name="index"></param>
-        public abstract void UnPack(ISOComponent isoField, byte[] packedBytes, ref int index);
+        public abstract void UnPack(ISOComponent isoField, ReadOnlySpan<byte> packedBytes, ref int index);
         /// <summary>
         /// 
         /// </summary>

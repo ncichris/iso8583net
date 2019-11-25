@@ -39,19 +39,19 @@ namespace ISO8583Net.Message
         /// <param name="logger"></param>
         /// <param name="messagePackager"></param>
         /// <param name="isoHeaderPackager"></param>
-        public ISOMessage(ILogger logger, ISOMessagePackager messagePackager, ISOHeaderPackager isoHeaderPackager) : base(logger, 0)
-        {
-            m_isoMesssagePackager = messagePackager;
+        //public ISOMessage(ILogger logger, ISOMessagePackager messagePackager, ISOHeaderPackager isoHeaderPackager) : base(logger, 0)
+        //{
+        //    m_isoMesssagePackager = messagePackager;
 
-            m_isoHeaderPackager = isoHeaderPackager;
+        //    m_isoMessageFields = new ISOMessageFields(Logger, m_isoMesssagePackager.GetISOMessageFieldsPackager(), 0);
 
-            m_isoMessageFields = new ISOMessageFields(Logger, m_isoMesssagePackager.GetISOMessageFieldsPackager(), 0);
+        //    m_isoHeader = ISOPackagerLoader.GetMessageHeader(m_isoMesssagePackager.GetISOMessageFieldsPackager().HeaderPackager, logger);
+        //    // based on isoHeaderPackager storage class initialize the correct ISOHeader
+        //    //m_isoHeaderPackager = isoHeaderPackager;
+        //    //m_isoHeader = new ISOHeaderVisa(Logger, m_isoHeaderPackager);
 
-            // based on isoHeaderPackager storage class initialize the correct ISOHeader
-            m_isoHeader = new ISOHeaderVisa(Logger, m_isoHeaderPackager);
-
-            m_totalFields = ((ISOMessagePackager)m_isoMesssagePackager).GetTotalFields();
-        }
+        //    m_totalFields = ((ISOMessagePackager)m_isoMesssagePackager).GetTotalFields();
+        //}
         /// <summary>
         /// 
         /// </summary>
@@ -63,12 +63,15 @@ namespace ISO8583Net.Message
 
             m_isoMessageFields = new ISOMessageFields(Logger, m_isoMesssagePackager.GetISOMessageFieldsPackager(), 0);
 
-            m_isoHeaderPackager = new ISOHeaderVisaPackager(Logger);
+            var headerResult = ISOPackagerLoader.GetMessageHeaderAndPackager(isoMessagePackager.GetISOMessageFieldsPackager().HeaderPackager, Logger);
+            m_isoHeader = headerResult.Header;
+            m_isoHeaderPackager = headerResult.Packager;
 
+            //m_isoHeaderPackager =  new ISOHeaderVisaPackager(Logger);
             // based on isoHeaderPackager storage class initialize the correct ISOHeader
-            m_isoHeader = new ISOHeaderVisa(Logger, m_isoHeaderPackager);
+            //m_isoHeader = new ISOHeaderVisa(Logger, m_isoHeaderPackager);
 
-            m_totalFields = ((ISOMessagePackager)m_isoMesssagePackager).GetTotalFields();
+            m_totalFields = (m_isoMesssagePackager).GetTotalFields();
         }
         /// <summary>
         /// 
@@ -197,7 +200,7 @@ namespace ISO8583Net.Message
         /// Unpack Message
         /// </summary>
         /// <param name="packedBytes"></param>
-        public void UnPack(byte[] packedBytes)
+        public void UnPack(ReadOnlySpan<byte> packedBytes)
         {
             int index = 0;
 

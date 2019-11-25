@@ -1,5 +1,6 @@
 ﻿using ISO8583Net.Header;
 using Microsoft.Extensions.Logging;
+using System;
 
 namespace ISO8583Net.Packager
 {
@@ -36,7 +37,7 @@ namespace ISO8583Net.Packager
         /// <param name="isoHeader"></param>
         /// <param name="packedBytes"></param>
         /// <param name="index"></param>
-        public abstract void UnPack(ISOHeader isoHeader, byte[] packedBytes, ref int index);
+        public abstract void UnPack(ISOHeader isoHeader, ReadOnlySpan<byte> packedBytes, ref int index);
         /// <summary>
         /// 
         /// </summary>

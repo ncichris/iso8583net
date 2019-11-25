@@ -68,7 +68,7 @@ namespace ISO8583Net.Field
         /// </summary>
         /// <param name="packedBytes"></param>
         /// <param name="index"></param>
-        public void Set(byte[] packedBytes, ref int index)
+        public void Set(ReadOnlySpan<byte> packedBytes, ref int index)
         {
             bool bitmap3rd = false;
 
@@ -77,8 +77,8 @@ namespace ISO8583Net.Field
             if ((m_packager.m_isoFieldDefinition.contentCoding) == ISOFieldCoding.BIN && m_length<9)
             {
                 // length is bytes is number of hexadecimal digits divided by 2
-
-                Array.Copy(packedBytes, index, m_bitmap, 0, m_length/2);
+                packedBytes.Slice(0, m_length / 2).CopyTo(m_bitmap);
+                //Array.Copy(packedBytes, index, m_bitmap, 0, m_length/2);
 
                 index += 4;
             }
@@ -105,8 +105,8 @@ namespace ISO8583Net.Field
                 if (bitmap3rd)
                 {
                     // copy 8x3=24 bytes to initialize m_bitmap
-
-                    Array.Copy(packedBytes, index, m_bitmap, 0, 24);
+                    packedBytes.Slice(index, 24).CopyTo(m_bitmap);
+                    //Array.Copy(packedBytes, index, m_bitmap, 0, 24);
 
                     index += 24;
 
@@ -116,8 +116,8 @@ namespace ISO8583Net.Field
                 else if (bitmap2nd)
                 {
                     // copy 8x2=16 bytes to initialize m_bitmap
-
-                    Array.Copy(packedBytes, index, m_bitmap, 0, 16);
+                    packedBytes.Slice(index, 16).CopyTo(m_bitmap);
+                    //Array.Copy(packedBytes, index, m_bitmap, 0, 16);
 
                     index += 16;
 
@@ -125,8 +125,8 @@ namespace ISO8583Net.Field
                 else
                 {
                     // copy 8 bytes to initialize m_bitmap
-
-                    Array.Copy(packedBytes, index, m_bitmap, 0, 8);
+                    packedBytes.Slice(index, 8).CopyTo(m_bitmap);
+                    //Array.Copy(packedBytes, index, m_bitmap, 0, 8);
 
                     index += 8;
 

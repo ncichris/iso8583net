@@ -14,10 +14,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="ISODialects\titp.xml" />
     <None Remove="ISODialects\visa.xml" />
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="ISODialects\titp.xml" />
     <EmbeddedResource Include="ISODialects\visa.xml" />
   </ItemGroup>
 

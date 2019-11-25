@@ -225,6 +225,45 @@ namespace ISO8583Net.Utilities
         }
 
         /// <summary>
+        /// Integer to BCD Encoded byte
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="packedBytes"></param>
+        /// <param name="index"></param>
+        /// <param name="numHexDigits"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static void Bcd2Bytes(int value, byte[] packedBytes, ref int index, int numHexDigits)
+        {
+            if (numHexDigits == 2)
+            {
+                //high 4 bits
+                packedBytes[index] = (byte)((value / 10) << 4);
+                //low 4 bits
+                packedBytes[index] += (byte)(value % 10);
+                index += 1;
+            }            
+            else if (numHexDigits == 4)
+            {
+                int tmpValue = value / 100;
+                //high 4 bits
+                packedBytes[index] = (byte)((tmpValue / 10) << 4);
+                //low 4 bits
+                packedBytes[index] += (byte)(tmpValue % 10);
+                index += 1;
+                
+                tmpValue = value - (tmpValue * 100);
+                //high 4 bits
+                packedBytes[index] = (byte)((tmpValue / 10) << 4);
+                //low 4 bits
+                packedBytes[index] += (byte)(tmpValue % 10);
+                index += 1;
+            }
+            else
+            {
+                throw new NotSupportedException($"{nameof(Bcd2Bytes)}, length must be either 2 or 4");
+            }
+        }
+        /// <summary>
         /// Integer to byte
         /// </summary>
         /// <param name="value"></param>
@@ -241,6 +280,12 @@ namespace ISO8583Net.Utilities
                 packedBytes[index] = (byte)(value);
                 index += 1;
             }
+            else if (numHexDigits == 4)
+            {
+                packedBytes[index] = (byte)(value);
+                packedBytes[index + 1] = (byte)(value >> 8);
+                index += 2;
+            }
             else
             {
                 packedBytes[index] = (byte)(value);
@@ -250,24 +295,51 @@ namespace ISO8583Net.Utilities
                 index = index + 4;
             }
         }
+
         /// <summary>
-        /// Convert a byte array to int
+        /// Convert a BCD Encoded byte array to int e.g 0x16 returns 16
         /// </summary>
         /// <param name="packedBytes"></param>
         /// <param name="index"></param>
         /// <param name="numHexDigits"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int Bytes2Int(byte[] packedBytes, ref int index, int numHexDigits)
+        public static int BytesBcd2Int(ReadOnlySpan<byte> packedBytes, ref int index, int numHexDigits)
         {
-            int pos = 8 * ((numHexDigits / 2) - 1);
-
             int len = numHexDigits / 2;
+            
+            int result = 0;
+
+            for (int i = 0; i < len; i++)
+            {
+                //If we are at the second, third ... byte, then multiply the existing value with 10
+                if (i != 0)
+                    result *= 100;
+                //Take the high 4 bits 
+                result += (packedBytes[index + i] >> 4) * 10;
+                //Take the low 4 bits
+                result += (packedBytes[index + i] & 0xF);                
+            }
+            index += len;
+
+            return result;
+        }
+        /// <summary>
+        /// Convert a Hex Encoded byte array to int e.g. 0x16 returns 22
+        /// </summary>
+        /// <param name="packedBytes"></param>
+        /// <param name="index"></param>
+        /// <param name="numHexDigits"></param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int Bytes2Int(ReadOnlySpan<byte> packedBytes, ref int index, int numHexDigits)
+        {
+            int len = numHexDigits / 2;
+            int pos = 8 * (len - 1);
 
             int result = 0;
 
             for (int i = 0; i < len; i++)
             {
-                result |= (int)(packedBytes[index + i] << pos);
+                result += (packedBytes[index + i] << pos);
                 pos -= 8;
             }
             index += len;
@@ -360,8 +432,9 @@ namespace ISO8583Net.Utilities
         /// <param name="packedBytes"></param>
         /// <param name="index"></param>
         /// <param name="padding"></param>
+        /// <param name="paddingCharacter"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static void Ascii2Bcd(string value, byte[] packedBytes, ref int index, ISOFieldPadding padding)
+        public static void Ascii2Bcd(string value, byte[] packedBytes, ref int index, ISOFieldPadding padding, byte paddingCharacter)
         {
             int valueLength = value.Length;
             int startIndex = 0;
@@ -369,8 +442,16 @@ namespace ISO8583Net.Utilities
             if (needPadding && padding == ISOFieldPadding.LEFT)
             {
                 //Read data and take first nibble
-                //left nibble padding leave empty and make a byte from the first nibble of the data 
-                packedBytes[index] = (byte)(value[0] - 0x30);
+                if (paddingCharacter != 0)
+                {
+                    //left nibble padding set to padding character and add the single nibble at the end
+                    packedBytes[index] = (byte)((paddingCharacter << 4) + (value[0] - 0x30));
+                }
+                else
+                {
+                    //left nibble padding leave empty and make a byte from the first nibble of the data 
+                    packedBytes[index] = (byte)(value[0] - 0x30);
+                }
                 index++;
                 //ignore the first char of the value, since we have already read it.
                 startIndex++;
@@ -384,14 +465,22 @@ namespace ISO8583Net.Utilities
             // no padding needed just convert to bcd
             for (int i = startIndex; i < valueLength; i += 2)
             {
-                packedBytes[index] = (byte)((value[i] - 0x30) * 0x10 + value[i + 1] - 0x30);
+                packedBytes[index] = (byte)(((value[i] - 0x30) << 4) + value[i + 1] - 0x30);
                 index++;
             }
             if (needPadding && padding == ISOFieldPadding.RIGHT)
             {
                 //read the last remaining nibble in the value and pad the last byte
-                //right nibble padding, take the last nibble and set it as the high part of the byte, leave the low/right side as 0 
-                packedBytes[index] = (byte)((value[valueLength] - 0x30) * 0x10);
+                if (paddingCharacter != 0)
+                {
+                    //right nibble padding, take the last nibble and set it as the high part of the byte, leave the low/right side as the padding character
+                    packedBytes[index] = (byte)(((value[valueLength] - 0x30) << 4) + paddingCharacter);
+                }
+                else
+                {
+                    //right nibble padding, take the last nibble and set it as the high part of the byte, leave the low/right side as 0 
+                    packedBytes[index] = (byte)((value[valueLength] - 0x30) << 4);
+                }
                 index++;
             }
 
@@ -405,7 +494,7 @@ namespace ISO8583Net.Utilities
         /// <param name="valueLength"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string Bcd2Ascii(byte[] packedBytes, ref int index, ISOFieldPadding padding, int valueLength)
+        public static string Bcd2Ascii(ReadOnlySpan<byte> packedBytes, ref int index, ISOFieldPadding padding, int valueLength)
         {
             var value = valueLength <= MaxStackAllocationSize
              ? stackalloc char[valueLength]
@@ -480,7 +569,7 @@ namespace ISO8583Net.Utilities
         /// <param name="numBytes"></param>
         /// <returns></returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string Bytes2Ascii(byte[] packedBytes, ref int index, int numBytes)
+        public static string Bytes2Ascii(ReadOnlySpan<byte> packedBytes, ref int index, int numBytes)
         {            
             var result = numBytes <= MaxStackAllocationSize
               ? stackalloc char[numBytes]
@@ -550,7 +639,7 @@ namespace ISO8583Net.Utilities
         /// <param name="numBytes"></param>
         /// <param name="packedBytes"></param>  
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string Bytes2Hex(byte[] packedBytes, ref int index, int numBytes)
+        public static string Bytes2Hex(ReadOnlySpan<byte> packedBytes, ref int index, int numBytes)
         {
             var lookup32 = _lookup32;
 
@@ -687,7 +776,7 @@ namespace ISO8583Net.Utilities
         /// <param name="index"></param>
         /// <param name="numBytes"></param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static string Ebcdic2Ascii(byte[] packedBytes, ref int index, int numBytes)
+        public static string Ebcdic2Ascii(ReadOnlySpan<byte> packedBytes, ref int index, int numBytes)
         {
             var os_toascii = _os_toascii;
 

@@ -3,6 +3,7 @@ using ISO8583Net.Packager;
 using BenchmarkDotNet.Engines;
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnostics.Windows.Configs;
+using System;
 
 namespace ISO8583NetBenchmark
 {
@@ -52,7 +53,7 @@ namespace ISO8583NetBenchmark
             packedBytes = m.Pack();
 
             ISOMessage uM = new ISOMessage(logger, mPackager);
-
+            
             uM.UnPack(packedBytes);
         }
 

@@ -1,4 +1,5 @@
-﻿using ISO8583Net.Interpreter;
+﻿using ISO8583Net.Header;
+using ISO8583Net.Interpreter;
 using ISO8583Net.Types;
 using Microsoft.Extensions.Logging;
 using System;
@@ -17,58 +18,46 @@ namespace ISO8583Net.Packager
         private int m_totalFields = 0;
 
         private readonly ILogger _logger;
-
-        internal ILogger Logger { get { return _logger; } }
         /// <summary>
-        /// 
+        /// Create a new packager based on an embedded file or an actual file on disk
         /// </summary>
         /// <param name="logger"></param>
-        /// <param name="fileName"></param>
+        /// <param name="fileName">File name on disk, or embedded resource file name</param>
         /// <param name="msgFieldPackager"></param>
         public ISOPackagerLoader(ILogger logger, string fileName, ref ISOMessageFieldsPackager msgFieldPackager)
         {
             _logger = logger;
 
             XmlReader reader = null;
-
-            ISOMessageTypesPackager isoMessageTypesPackager = null;
-
-            if (File.Exists(fileName))
+            
+            try
             {
-                if (Logger.IsEnabled(LogLevel.Trace)) Logger.LogTrace("Loading packager definition from [" + fileName + "]");
+                var embeddedResource = typeof(ISOPackagerLoader).GetTypeInfo().Assembly.GetManifestResourceStream("ISO8583Net.ISODialects." + fileName);
+                reader = XmlReader.Create(embeddedResource);
+            }
+            catch (Exception)
+            {
+                //Resource Not found try with a file           
+            }
 
-                reader = XmlReader.Create(fileName);
+            if (reader != null)
+            {
+                ReadDefinition(ref msgFieldPackager, reader);
             }
             else
             {
-                Logger.LogError(string.Format("Filename [{0}] does not exist",fileName));
-
-                throw new Exception(string.Format("Filename[{0}] does not exist", fileName));
-            }
-
-            while (reader.Read())
-            {
-                if (reader.IsStartElement())
+                if (File.Exists(fileName))
                 {
-                    switch (reader.Name)
-                    {
-                        case "isopackager":
-                            string attribute = reader["totalfields"];
-                            m_totalFields = Int32.Parse(attribute);
-                            m_totalFields += 1;
-                            break;
+                    if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace("Loading packager definition from [" + fileName + "]");
 
-                        case "messages":
-                            isoMessageTypesPackager = new ISOMessageTypesPackager(Logger, m_totalFields);
-                            isoMessageTypesPackager = LoadMessageTypes(reader);
-                            break;
+                    reader = XmlReader.Create(fileName);
+                    ReadDefinition(ref msgFieldPackager, reader);
+                }
+                else
+                {
+                    _logger.LogError(string.Format("Filename [{0}] does not exist", fileName));
 
-                        case "isofields":
-                            msgFieldPackager = LoadISOMessageFieldsPackager(reader,0); 
-                            msgFieldPackager.SetMessageTypesPackager(isoMessageTypesPackager);                           
-                            msgFieldPackager.SetStorageClass(Type.GetType("ISO8583Net.ISOMessageFields"));
-                            break;
-                    }
+                    throw new Exception(string.Format("Filename[{0}] does not exist", fileName));
                 }
             }
         }
@@ -80,19 +69,21 @@ namespace ISO8583Net.Packager
         public ISOPackagerLoader(ILogger logger, ref ISOMessageFieldsPackager msgFieldPackager)
         {
             _logger = logger;
-
-            XmlReader reader = null;
-
-            ISOMessageTypesPackager isoMessageTypesPackager = null;
-
-            if (Logger.IsEnabled(LogLevel.Trace)) Logger.LogTrace("Loading packager definition from build-in resource");
+            if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace("Loading packager definition from build-in resource");
 
             // load from embeded resource visa.xml
 
             Stream stream = typeof(ISOPackagerLoader).GetTypeInfo().Assembly.GetManifestResourceStream("ISO8583Net.ISODialects.visa.xml");
 
-            reader = XmlReader.Create(stream);
+            var reader = XmlReader.Create(stream);
 
+            ReadDefinition(ref msgFieldPackager, reader);
+        }
+
+        private void ReadDefinition(ref ISOMessageFieldsPackager msgFieldPackager, XmlReader reader)
+        {
+            ISOMessageTypesPackager isoMessageTypesPackager = null;
+            string headerPackager = null;
             while (reader.Read())
             {
                 if (reader.IsStartElement())
@@ -103,21 +94,48 @@ namespace ISO8583Net.Packager
                             string attribute = reader["totalfields"];
                             m_totalFields = Int32.Parse(attribute);
                             m_totalFields += 1;
+                            headerPackager = reader["headerpackager"];
                             break;
 
-                        case "messages":
-                            isoMessageTypesPackager = new ISOMessageTypesPackager(Logger, m_totalFields);
+                        case "messages":                            
                             isoMessageTypesPackager = LoadMessageTypes(reader);
                             break;
 
                         case "isofields":
                             msgFieldPackager = LoadISOMessageFieldsPackager(reader, 0);
+                            msgFieldPackager.HeaderPackager = headerPackager;
                             msgFieldPackager.SetMessageTypesPackager(isoMessageTypesPackager);
                             msgFieldPackager.SetStorageClass(Type.GetType("ISO8583Net.Field.ISOMessageFields"));
                             break;
                     }
                 }
             }
+        }
+         /// <summary>
+         /// 
+         /// </summary>
+         /// <param name="headerPackagerName"></param>
+         /// <param name="logger"></param>
+         /// <returns></returns>
+        public static (ISOHeader Header, ISOHeaderPackager Packager) GetMessageHeaderAndPackager(string headerPackagerName, ILogger logger)
+        {
+            ISOHeader header;
+            ISOHeaderPackager packager;
+            switch (headerPackagerName)
+            {
+                case "ISOHeaderTITPPackager":
+                    packager = new ISOHeaderTITPPackager(logger);
+                    header = new ISOHeaderTITP(logger);
+                    break;
+                case "ISOHeaderVisaPackager":
+                    packager = new ISOHeaderVisaPackager(logger);
+                    header = new ISOHeaderVisa(logger);
+                    break;
+                default:
+                    throw new ArgumentException($"Invalid header packager name: {headerPackagerName}");
+
+            }
+            return (header, packager);
         }
         /// <summary>
         /// 
@@ -126,13 +144,13 @@ namespace ISO8583Net.Packager
         /// <returns></returns>
         private ISOMessageTypesPackager LoadMessageTypes(XmlReader reader)
         {
-            ISOMessageTypesPackager msgTypesPackager = new ISOMessageTypesPackager(Logger, m_totalFields);
+            ISOMessageTypesPackager msgTypesPackager = new ISOMessageTypesPackager(_logger, m_totalFields);
 
             if (reader.ReadToDescendant("message"))
             {
                 do
                 {
-                    ISOMsgTypePackager msgTypeDefinition = new ISOMsgTypePackager(Logger, m_totalFields);
+                    ISOMsgTypePackager msgTypeDefinition = new ISOMsgTypePackager(_logger, m_totalFields);
 
                     // Search for the attribute name on this current node.
 
@@ -203,7 +221,7 @@ namespace ISO8583Net.Packager
         {
             ISOFieldDefinition fieldDefinition = new ISOFieldDefinition();
 
-            ISOFieldPackager fieldPackager = new ISOFieldPackager(Logger);
+            ISOFieldPackager fieldPackager = new ISOFieldPackager(_logger);
 
             // Search for the attribute name on this current node.
 
@@ -382,6 +400,23 @@ namespace ISO8583Net.Packager
                 }
             }
 
+            attribute = reader["contentpaddingcharacter"];
+            if (!string.IsNullOrEmpty(attribute))
+            {
+                if (fieldDefinition.contentCoding == ISOFieldCoding.ASCII || fieldDefinition.contentCoding == ISOFieldCoding.ASCII)
+                {
+
+                    //save as ascii character
+                    fieldDefinition.contentPaddingCharacter = (byte)attribute[0];
+                }
+                else
+                {
+                    //padding character should be a hex digit 0-F
+                    //save the numeric value of it
+                    fieldDefinition.contentPaddingCharacter = Convert.ToByte(attribute, 16);
+                }
+                
+            }
             attribute = reader["contentpadding"];
 
             if (attribute != null)
@@ -420,7 +455,7 @@ namespace ISO8583Net.Packager
         /// <returns></returns>
         private ISOMessageFieldsPackager LoadISOMessageFieldsPackager(XmlReader reader, int fieldNumber)
         {
-            ISOMessageFieldsPackager msgFieldPackager = new ISOMessageFieldsPackager(Logger, fieldNumber, m_totalFields); 
+            ISOMessageFieldsPackager msgFieldPackager = new ISOMessageFieldsPackager(_logger, fieldNumber, m_totalFields); 
 
             if (reader.ReadToDescendant("isofield"))
             {
@@ -433,7 +468,7 @@ namespace ISO8583Net.Packager
                     string iscomposite    = reader["composite"];
                     string isointerpreter = reader["interpreter"];
 
-                    if (Logger.IsEnabled(LogLevel.Trace)) Logger.LogTrace("Field Number: " + fldNumber.ToString().PadLeft(3, '0') + " Name: " + reader["name"] + " Description: " + reader["desc"]);
+                    if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace("Field Number: " + fldNumber.ToString().PadLeft(3, '0') + " Name: " + reader["name"] + " Description: " + reader["desc"]);
                                                                                                 
                     switch (packager)
                     {
@@ -443,7 +478,7 @@ namespace ISO8583Net.Packager
 
                             totalFields += 1;
 
-                            if (Logger.IsEnabled(LogLevel.Trace)) Logger.LogTrace("Field Number: " + fldNumber.ToString().PadLeft(3,'0') + " is of [[[<--ISOMessageFieldsPackager-->]]], SubFields follow:");
+                            if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace("Field Number: " + fldNumber.ToString().PadLeft(3,'0') + " is of [[[<--ISOMessageFieldsPackager-->]]], SubFields follow:");
 
                             ISOFieldPackager fPackager = LoadISOFieldPackager(reader);
 
@@ -510,7 +545,7 @@ namespace ISO8583Net.Packager
         /// <returns></returns>
         private ISOFieldBitmapSubFieldsPackager LoadISOMessageSubFieldsPackager(XmlReader reader, int fieldNumber)
         {
-            ISOFieldBitmapSubFieldsPackager msgFieldPackager = new ISOFieldBitmapSubFieldsPackager(Logger, fieldNumber, m_totalFields);
+            ISOFieldBitmapSubFieldsPackager msgFieldPackager = new ISOFieldBitmapSubFieldsPackager(_logger, fieldNumber, m_totalFields);
 
             if (reader.ReadToDescendant("isofield"))
             {
@@ -523,7 +558,7 @@ namespace ISO8583Net.Packager
                     string iscomposite = reader["composite"];
                     string isointerpreter = reader["interpreter"];
 
-                    if (Logger.IsEnabled(LogLevel.Trace)) Logger.LogTrace("Field Number: " + fldNumber.ToString().PadLeft(3, '0') + " Name: " + reader["name"] + " Description: " + reader["desc"]);
+                    if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace("Field Number: " + fldNumber.ToString().PadLeft(3, '0') + " Name: " + reader["name"] + " Description: " + reader["desc"]);
 
                     switch (packager)
                     {
@@ -533,7 +568,7 @@ namespace ISO8583Net.Packager
 
                             totalFields += 1;
 
-                            if (Logger.IsEnabled(LogLevel.Trace)) Logger.LogTrace("Field Number: " + fldNumber.ToString().PadLeft(3, '0') + " is of [[[<--ISOMessageFieldsPackager-->]]], SubFields follow:");
+                            if (_logger.IsEnabled(LogLevel.Trace)) _logger.LogTrace("Field Number: " + fldNumber.ToString().PadLeft(3, '0') + " is of [[[<--ISOMessageFieldsPackager-->]]], SubFields follow:");
 
                             ISOFieldPackager fPackager = LoadISOFieldPackager(reader);
 
@@ -599,7 +634,7 @@ namespace ISO8583Net.Packager
         /// <returns></returns>
         private ISOIndexedValueInterpreter LoadISOIndexedValueInterpreter(XmlReader reader)
         {
-            ISOIndexedValueInterpreter isoIndexedValueInterpreter = new ISOIndexedValueInterpreter(Logger);
+            ISOIndexedValueInterpreter isoIndexedValueInterpreter = new ISOIndexedValueInterpreter(_logger);
 
             if (reader.ReadToDescendant("interpreter"))
             {

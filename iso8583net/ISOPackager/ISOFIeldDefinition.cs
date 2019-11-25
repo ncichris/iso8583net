@@ -25,6 +25,10 @@ namespace ISO8583Net.Packager
 
         /// <value>The content padding alignment</value>
         public ISOFieldPadding contentPadding { get; set; }
+        /// <summary>
+        /// The content padding character 
+        /// </summary>
+        public byte contentPaddingCharacter { get; set; }
 
         /// <value>The field description</value>
         public string description { get; set; }
